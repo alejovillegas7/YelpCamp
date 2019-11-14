@@ -2,8 +2,11 @@ var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
+var passport = require('passport');
+var LocalStrategy = require('passport-local');
 var Campground = require('./models/campground');
 var Comment = require('./models/comment');
+var User = require('./models/user');
 var seedDB = require('./seeds');
 
 mongoose.connect("mongodb://localhost:27017/yelp_camp", { useNewUrlParser: true, useUnifiedTopology: true });
@@ -13,6 +16,26 @@ app.use(express.static(__dirname + "/public"));
 app.set("view engine", "ejs");
 
 seedDB();
+
+//PASSPORT CONFIGURATION
+app.use(require('express-session')({
+    secret: "this is the yelpcamp secret",
+    resave: false,
+    saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+//to manage the logged user information and manipulate the navbar
+app.use((req, res, next) => {
+    res.locals.currentUser = req.user;
+    next();
+})
+
 
 // Campground.create({ name: "Salmon creek", image: "https://thehardtimes.net/wp-content/uploads/2019/05/crystal-lake.jpg", description: "this is  a huge campground hill, no bathrooms, no nothing" }, (err, campground) => {
 //     if (err) {
@@ -76,7 +99,7 @@ app.get("/campgrounds/:id", (req, res) => {
 })
 
 //COMMENTS ROUTES
-app.get("/campgrounds/:id/comments/new", (req, res) => {
+app.get("/campgrounds/:id/comments/new", isLoggedIn, (req, res) => {
     //find campground by id
     Campground.findById(req.params.id, (err, campgroundFound) => {
         if (err) {
@@ -87,7 +110,7 @@ app.get("/campgrounds/:id/comments/new", (req, res) => {
     })
 })
 
-app.post("/campgrounds/:id/comments", (req, res) => {
+app.post("/campgrounds/:id/comments", isLoggedIn, (req, res) => {
     //lookup camground using ID
     Campground.findById(req.params.id, (err, camfroundFound) => {
         if (err) {
@@ -109,6 +132,56 @@ app.post("/campgrounds/:id/comments", (req, res) => {
         }
     });
 })
+
+//AUTH ROUTES
+
+//show register form
+app.get("/register", (req, res) => {
+    res.render("register");
+})
+
+//handl sign up logic
+app.post("/register", function (req, res) {
+    var newUser = new User({ username: req.body.username });
+    User.register(newUser, req.body.password, (err, user) => {
+        if (err) {
+            console.log(err);
+            return res.render("register");
+        }
+        passport.authenticate("local")(req, res, () => {
+            res.redirect("/campgrounds");
+        })
+    });
+})
+
+//show login form
+app.get("/login", (req, res) => {
+    res.render("login");
+});
+
+//handling login logic
+//schema = app.post("/login", middleware, callback)
+app.post("/login", passport.authenticate("local",
+    {
+        successRedirect: "/campgrounds",
+        failureRedirect: "/login"
+    }), (req, res) => {
+
+    });
+
+//logout route
+app.get("/logout", (req, res) => {
+    req.logOut();
+    res.redirect("/campgrounds");
+})
+
+function isLoggedIn(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect("/login");
+}
+
 
 app.listen(3000, () => {
     console.log("YelpCamp running at port 3000");
