@@ -8,17 +8,19 @@ var Campground = require('./models/campground');
 var Comment = require('./models/comment');
 var User = require('./models/user');
 var seedDB = require('./seeds');
+var methodOverride = require('method-override');
 
 //requring routes
 var commentsRoutes = require('./routes/comments');
 var campgroundsRoutes = require('./routes/campgrounds');
 var authRoutes = require('./routes/index');
 
-mongoose.connect("mongodb://localhost:27017/yelp_camp", { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect("mongodb://localhost:27017/yelp_camp", { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false });
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + "/public"));
 app.set("view engine", "ejs");
+app.use(methodOverride("_method"));
 
 //seedDB(); //seed the database
 

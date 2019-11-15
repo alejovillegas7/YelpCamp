@@ -1,5 +1,6 @@
 .img-thumbnail .img-fluid{
     width: 100%;
+    height: auto;
 }
 
 .img-thumbnail{
