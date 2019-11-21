@@ -24,6 +24,7 @@ app.set("view engine", "ejs");
 app.use(methodOverride("_method"));
 app.use(flash());
 
+var port = process.env.PORT || 8080;
 //seedDB(); //seed the database
 
 //PASSPORT CONFIGURATION
@@ -61,6 +62,6 @@ app.use("/campgrounds/:id/comments", commentsRoutes);
 app.use(authRoutes);
 app.use("/campgrounds", campgroundsRoutes);
 
-app.listen(3000, () => {
+app.listen(port, () => {
     console.log("YelpCamp running at port 3000");
 })
